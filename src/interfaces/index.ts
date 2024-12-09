@@ -3,6 +3,7 @@ import { LilithRequest } from "./fetch";
 
 export enum NHentaiImageExtension {
     j = "jpg",
+    w = "webp",
     p = "png",
     g = "gif",
 }

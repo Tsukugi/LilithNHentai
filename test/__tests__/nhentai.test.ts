@@ -12,17 +12,17 @@ import { TextMocksForDomParser, headers, fetchMock } from "../nhentaiMock";
 import { useCheerioDomParser } from "../../src/impl/useCheerioDomParser";
 
 import { useNodeFetch } from "../../src/impl/useNodeFetch";
-import { useAPILoader } from "../../src/index";
+import { useLilithNHentai } from "../../src/index";
 import { useLilithLog } from "../../src/utils/log";
 
-const debug = false;
+const debug = true;
 const { log } = useLilithLog(debug);
 
 describe("Lilith", () => {
     describe("Test nhentai ", () => {
         let loader: RepositoryBase = {} as RepositoryBase;
         beforeEach(() => {
-            loader = useAPILoader({
+            loader = useLilithNHentai({
                 headers,
                 domParser: useCheerioDomParser,
                 fetch: useNodeFetch,
@@ -66,7 +66,7 @@ describe("Lilith", () => {
             expect(page.length).toBeGreaterThan(0);
         });
         test("RandomBook", async () => {
-            const randomLoader = useAPILoader({
+            const randomLoader = useLilithNHentai({
                 headers,
                 fetch: () => fetchMock({}, TextMocksForDomParser.Random),
                 domParser: useCheerioDomParser,
@@ -74,6 +74,30 @@ describe("Lilith", () => {
             const book: Book = await randomLoader.getRandomBook();
             log(book);
             expect(book).toBeDefined();
+        });
+        test("Supports webp", async () => {
+            const book: Book = await loader.getBook("542733");
+            log(book);
+            const bookCoverExtension = book.cover.uri.split(".").slice(-1)[0];
+            expect(bookCoverExtension).toBe("webp");
+        });
+
+        test("Has all extensions supported", async () => {
+            const latestBooks: BookListResults = await loader.getLatestBooks(1);
+            log(latestBooks.results);
+
+            const extensions = latestBooks.results.map(
+                (result) => result.cover.uri,
+            );
+            log(extensions);
+
+            const undefinedExtensions = extensions.filter(
+                (uri) => uri.split(".").slice(-1)[0] === undefined,
+            );
+
+            console.log(await fetch(extensions[0]));
+
+            expect(undefinedExtensions.length).toBe(0);
         });
     });
 });
