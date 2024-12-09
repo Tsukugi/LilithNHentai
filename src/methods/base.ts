@@ -7,7 +7,7 @@ import {
 } from "@atsu/lilith";
 
 import { UseDomParserImpl } from "../interfaces/domParser";
-import { GetImageUriProps, NHentaiLanguage, NHentaiTag } from "../interfaces";
+import { NHentaiLanguage, NHentaiTag } from "../interfaces";
 import { ArrayUtils } from "../utils/array";
 
 /*
@@ -172,28 +172,6 @@ const getGalleries = (
 };
 
 /**
- * Get the image URI based on the provided parameters.
- * @param {GetImageUriProps} props - The properties needed to generate the image URI.
- * @returns {string} - The generated image URI.
- * @throws {LilithError} - Throws an error for invalid type or missing page number.
- */
-const getImageUri = ({
-    domains: { tinyImgBaseUrl, imgBaseUrl },
-    mediaId,
-    type,
-    imageExtension,
-    pageNumber,
-}: GetImageUriProps): string => {
-    if (type === "cover")
-        return `${tinyImgBaseUrl}/${mediaId}/cover.${imageExtension}`;
-    if (type === "thumbnail")
-        return `${tinyImgBaseUrl}/${mediaId}/thumb.${imageExtension}`;
-    if (type === "page" && pageNumber !== undefined)
-        return `${imgBaseUrl}/${mediaId}/${pageNumber}.${imageExtension}`;
-    throw new LilithError(500, "Invalid type or missing page number.");
-};
-
-/**
  * NHentaiBase object containing various utilities related to NHentai integration.
  */
 export const useNHentaiMethods = () => {
@@ -201,7 +179,6 @@ export const useNHentaiMethods = () => {
         NHentaiPageResultSize,
         LanguageMapper,
         LanguageCodeMapper,
-        getImageUri,
         extractLanguages,
         getLanguageFromTags,
         getGalleries,

@@ -84,6 +84,7 @@ export const useNHentaiSearchMethod = ({
         useLilithLog(debug).log({
             totalPages,
             availableLanguages: books.map((book) => book.availableLanguages),
+            uris: books.map((book) => book.cover.uri),
         });
 
         return {

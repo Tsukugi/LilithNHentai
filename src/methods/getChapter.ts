@@ -1,9 +1,5 @@
-import { GetChapter, Chapter, LilithError } from "@atsu/lilith";
-import {
-    NHentaiImageExtension,
-    NHentaiResult,
-    UseNHentaiMethodProps,
-} from "../interfaces";
+import { GetChapter, Chapter } from "@atsu/lilith";
+import { NHentaiResult, UseNHentaiMethodProps } from "../interfaces";
 import { useLilithLog } from "../utils/log";
 import { useNHentaiMethods } from "./base";
 
@@ -16,12 +12,29 @@ export const useNHentaiGetChapterMethod = (
     props: UseNHentaiMethodProps,
 ): GetChapter => {
     const {
-        domains: { apiUrl },
+        domains: { apiUrl, baseUrl },
         options: { debug },
         request,
     } = props;
-    const { LanguageMapper, getLanguageFromTags, getImageUri } =
-        useNHentaiMethods();
+    const { LanguageMapper, getLanguageFromTags } = useNHentaiMethods();
+
+    const apiPromise = async (id: string) =>
+        /* API call to get external info */
+        await (await request<NHentaiResult>(`${apiUrl}/gallery/${id}`)).json();
+
+    const getImages = async (id: string) => {
+        /* Scrapper to get images */
+        const response = await request(`${baseUrl}/g/${id}`);
+        const document = await response.getDocument();
+
+        const imagesSelector = ".thumb-container img.lazyload";
+
+        const images = document
+            .findAll(imagesSelector)
+            .map((image) => image.getAttribute("data-src"));
+
+        return images;
+    };
 
     /**
      * Retrieves information about a chapter based on its identifier.
@@ -33,31 +46,21 @@ export const useNHentaiGetChapterMethod = (
         /**
          * NHentai doesn't use chapters; it directly gets the pages from the book as 1 chapter books.
          */
-        const response = await request<NHentaiResult>(
-            `${apiUrl}/gallery/${chapterId}`,
-        );
 
-        if (!response || response?.statusCode !== 200) {
-            throw new LilithError(response?.statusCode, "No chapter found");
-        }
-
-        const book = await response.json();
+        const [book, imageUrls] = await Promise.all([
+            apiPromise(chapterId),
+            getImages(chapterId),
+        ]);
 
         useLilithLog(debug).log({
             language: LanguageMapper[getLanguageFromTags(book.tags)],
         });
+        useLilithLog(debug).log({ imageUrls });
 
         return {
             id: chapterId,
             pages: book.images.pages.map((page, index) => ({
-                uri: getImageUri({
-                    type: "page",
-                    mediaId: book.media_id,
-                    imageExtension:
-                        NHentaiImageExtension[book.images.thumbnail.t],
-                    pageNumber: index + 1,
-                    domains: props.domains,
-                }),
+                uri: imageUrls[index],
                 width: page.w,
                 height: page.h,
             })),

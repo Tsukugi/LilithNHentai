@@ -1,15 +1,6 @@
-import {
-    GetLatestBooks,
-    BookListResults,
-    LilithError,
-    BookBase,
-    LilithImage,
-} from "@atsu/lilith";
-import {
-    NHentaiImageExtension,
-    NHentaiPaginateResult,
-    UseNHentaiMethodProps,
-} from "../interfaces";
+import { GetLatestBooks, BookListResults } from "@atsu/lilith";
+import { useLilithLog } from "../utils/log";
+import { NHentaiPaginateResult, UseNHentaiMethodProps } from "../interfaces";
 import { useNHentaiMethods } from "./base";
 
 /**
@@ -22,11 +13,37 @@ export const useNHentaiGetLatestBooksMethod = (
     props: UseNHentaiMethodProps,
 ): GetLatestBooks => {
     const {
-        domains: { apiUrl },
+        domains: { baseUrl, apiUrl },
+        options: { debug, requiredLanguages },
         request,
     } = props;
-    const { LanguageMapper, getLanguageFromTags, getImageUri } =
-        useNHentaiMethods();
+
+    const { getGalleries } = useNHentaiMethods();
+
+    const apiPromise = async (page: number) =>
+        /* API call to get external info */
+        await (
+            await request<NHentaiPaginateResult>(
+                `${apiUrl}/galleries/all?page=${page}`,
+            )
+        ).json();
+
+    const getGalleriesFromMainPage = async () => {
+        /* Scrapper to get images */
+        const response = await request(`${baseUrl}`);
+        const document = await response.getDocument();
+
+        const popularGalleriesContainerSelector =
+            "div.container.index-container:not(.index-popular)";
+
+        const galleries = getGalleries(
+            document,
+            requiredLanguages,
+            popularGalleriesContainerSelector,
+        );
+
+        return galleries;
+    };
 
     /**
      * Function for fetching the latest NHentai books for a specific page.
@@ -35,52 +52,21 @@ export const useNHentaiGetLatestBooksMethod = (
      * @returns {Promise<BookListResults>} - The pagination result containing the latest books.
      */
     return async (page: number): Promise<BookListResults> => {
-        // Making a request to the NHentai API for the latest books
-        const response = await request<NHentaiPaginateResult>(
-            `${apiUrl}/galleries/all?page=${page}`,
-        );
+        const [latestBooks, galleries] = await Promise.all([
+            apiPromise(page),
+            getGalleriesFromMainPage(),
+        ]);
 
-        if (response.statusCode !== 200) {
-            throw new LilithError(
-                response.statusCode,
-                "Could not find a correct pagination",
-            );
-        }
-
-        const data = await response.json();
-        const numPages = data.num_pages || 0;
-        const perPageEntries = data.per_page || 0;
+        const numPages = latestBooks.num_pages || 0;
+        const perPageEntries = latestBooks.per_page || 0;
         const totalResults = numPages * perPageEntries;
 
-        // Mapping the response data to book objects
-        const books: BookBase[] = (data.result || []).map((result) => {
-            const cover = result.images.cover;
-            const coverImage: LilithImage = {
-                uri: getImageUri({
-                    type: "cover",
-                    mediaId: result.media_id,
-                    imageExtension: NHentaiImageExtension[cover.t],
-                    domains: props.domains,
-                }),
-                width: cover.w,
-                height: cover.h,
-            };
-            return {
-                id: `${result.id}`,
-                title: result.title.english,
-                cover: coverImage,
-                availableLanguages: [
-                    LanguageMapper[getLanguageFromTags(result.tags)],
-                ],
-            };
-        });
-
-        // Constructing and returning the pagination result
+        useLilithLog(debug).log({ galleries });
         return {
             page,
             totalResults,
             totalPages: numPages,
-            results: books,
+            results: galleries,
         };
     };
 };

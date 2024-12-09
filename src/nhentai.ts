@@ -1,5 +1,6 @@
 import {
     CustomFetchInitOptions,
+    LilithError,
     RepositoryTemplate,
     UrlParamPair,
 } from "@atsu/lilith";
@@ -37,7 +38,15 @@ export const useNHentaiRepository: RepositoryTemplate = (props) => {
             credentials: "include",
         };
 
-        return doRequest(url, params, requestOptions);
+        const response = await doRequest<T>(url, params, requestOptions);
+        if (response.statusCode !== 200) {
+            throw new LilithError(
+                response.statusCode,
+                JSON.stringify(response),
+            );
+        }
+
+        return response;
     };
 
     const domains = { baseUrl, imgBaseUrl, apiUrl, tinyImgBaseUrl };

@@ -5,11 +5,7 @@ import {
     GetBook,
     Book,
 } from "@atsu/lilith";
-import {
-    NHentaiImageExtension,
-    NHentaiResult,
-    UseNHentaiMethodProps,
-} from "../interfaces";
+import { NHentaiResult, UseNHentaiMethodProps } from "../interfaces";
 import { useLilithLog } from "../utils/log";
 import { useNHentaiMethods } from "./base";
 
@@ -22,13 +18,37 @@ export const useNHentaiGetBookmethod = (
     props: UseNHentaiMethodProps,
 ): GetBook => {
     const {
-        domains: { apiUrl },
+        domains: { apiUrl, baseUrl },
         options: { debug, requiredLanguages },
         request,
     } = props;
 
-    const { LanguageMapper, getLanguageFromTags, getImageUri } =
-        useNHentaiMethods();
+    const { LanguageMapper, getLanguageFromTags } = useNHentaiMethods();
+
+    const apiPromise = async (id: string) =>
+        /* API call to get external info */
+        await (await request<NHentaiResult>(`${apiUrl}/gallery/${id}`)).json();
+
+    const getImages = async (id: string) => {
+        /* Scrapper to get images */
+        const response = await request(`${baseUrl}/g/${id}`);
+        const document = await response.getDocument();
+
+        const coverSelector = "#cover img";
+
+        const cover = document.find(coverSelector).getAttribute("data-src");
+
+        const imagesSelector = ".thumb-container img.lazyload";
+
+        const images = document
+            .findAll(imagesSelector)
+            .map((image) => image.getAttribute("data-src"));
+
+        return {
+            cover,
+            images,
+        };
+    };
 
     /**
      * Retrieves information about a book based on its identifier.
@@ -38,15 +58,10 @@ export const useNHentaiGetBookmethod = (
      * @throws {LilithError} - Throws an error if the book is not found or no translation is available for the requested language.
      */
     return async (id: string): Promise<Book> => {
-        const response = await request<NHentaiResult>(
-            `${apiUrl}/gallery/${id}`,
-        );
-
-        if (!response || response?.statusCode !== 200) {
-            throw new LilithError(response?.statusCode, "No book found");
-        }
-
-        const book = await response.json();
+        const [book, images] = await Promise.all([
+            apiPromise(id),
+            getImages(id),
+        ]);
 
         const tags: LilithTag[] = [];
 
@@ -83,18 +98,14 @@ export const useNHentaiGetBookmethod = (
 
         const { english, japanese, pretty } = book.title;
 
+        useLilithLog(debug).log({ coverUri: images });
         return {
             title: english || japanese || pretty,
             id: `${book.id}`,
             author,
             tags,
             cover: {
-                uri: getImageUri({
-                    type: "cover",
-                    mediaId: book.media_id,
-                    imageExtension: NHentaiImageExtension[book.images.cover.t],
-                    domains: props.domains,
-                }),
+                uri: images.cover,
                 width: book.images.cover.w,
                 height: book.images.cover.h,
             },
@@ -107,6 +118,9 @@ export const useNHentaiGetBookmethod = (
                         book.title.pretty,
                     language: lilithLanguage,
                     chapterNumber: 1,
+                    pages: images.images.map((image) => ({
+                        uri: image,
+                    })),
                 },
             ],
             availableLanguages: [lilithLanguage],
