@@ -28,9 +28,9 @@ export const useNHentaiGetLatestBooksMethod = (
             )
         ).json();
 
-    const getGalleriesFromMainPage = async () => {
+    const getGalleriesFromMainPage = async (page: number) => {
         /* Scrapper to get images */
-        const response = await request(`${baseUrl}`);
+        const response = await request(`${baseUrl}`, [["page", page]]);
         const document = await response.getDocument();
 
         const popularGalleriesContainerSelector =
@@ -54,7 +54,7 @@ export const useNHentaiGetLatestBooksMethod = (
     return async (page: number): Promise<BookListResults> => {
         const [latestBooks, galleries] = await Promise.all([
             apiPromise(page),
-            getGalleriesFromMainPage(),
+            getGalleriesFromMainPage(page),
         ]);
 
         const numPages = latestBooks.num_pages || 0;
