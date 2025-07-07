@@ -52,21 +52,29 @@ export const useNHentaiGetLatestBooksMethod = (
      * @returns {Promise<BookListResults>} - The pagination result containing the latest books.
      */
     return async (page: number): Promise<BookListResults> => {
-        const [latestBooks, galleries] = await Promise.all([
-            apiPromise(page),
-            getGalleriesFromMainPage(page),
-        ]);
+        try {
+            const [latestBooks, galleries] = await Promise.all([
+                apiPromise(page),
+                getGalleriesFromMainPage(page),
+            ]);
 
-        const numPages = latestBooks.num_pages || 0;
-        const perPageEntries = latestBooks.per_page || 0;
-        const totalResults = numPages * perPageEntries;
+            const numPages = latestBooks.num_pages || 0;
+            const perPageEntries = latestBooks.per_page || 0;
+            const totalResults = numPages * perPageEntries;
 
-        useLilithLog(debug).log({ galleries });
-        return {
-            page,
-            totalResults,
-            totalPages: numPages,
-            results: galleries,
-        };
+            useLilithLog(debug).log({ galleries });
+            return {
+                page,
+                totalResults,
+                totalPages: numPages,
+                results: galleries,
+            };
+        } catch (error) {
+            console.error(error);
+            return {
+                page,
+                results: [],
+            };
+        }
     };
 };

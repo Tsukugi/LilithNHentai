@@ -136,7 +136,7 @@ export const useNHentaiSearchMethod = ({
                     results: [...sequentialRes.results, ...result.results],
                 };
             },
-        });
+        }).catch(console.error);
 
         return {
             ...sequentialRes,

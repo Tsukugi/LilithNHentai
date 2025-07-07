@@ -58,72 +58,86 @@ export const useNHentaiGetBookmethod = (
      * @throws {LilithError} - Throws an error if the book is not found or no translation is available for the requested language.
      */
     return async (id: string): Promise<Book> => {
-        const [book, images] = await Promise.all([
-            apiPromise(id),
-            getImages(id),
-        ]);
+        try {
+            const [book, images] = await Promise.all([
+                apiPromise(id),
+                getImages(id),
+            ]);
 
-        const tags: LilithTag[] = [];
+            const tags: LilithTag[] = [];
 
-        let author = "unknown";
-        book.tags.forEach((tag) => {
-            if (tag.type === "author" && author === "unknown") {
-                author = tag.name; // Get the first author
+            let author = "unknown";
+            book.tags.forEach((tag) => {
+                if (tag.type === "author" && author === "unknown") {
+                    author = tag.name; // Get the first author
+                }
+                if (tag.type === "tag") {
+                    tags.push({
+                        id: `${tag.id}`,
+                        name: tag.name,
+                    });
+                }
+            });
+
+            const lilithLanguage: LilithLanguage =
+                LanguageMapper[getLanguageFromTags(book.tags)];
+
+            const matchesTranslation =
+                requiredLanguages.includes(lilithLanguage);
+            useLilithLog(debug).log({
+                requiredLanguages,
+                lilithLanguage,
+                matchesTranslation,
+                tags: book.tags.map((tag) => [tag.type, tag.name]),
+            });
+
+            if (!matchesTranslation) {
+                throw new LilithError(
+                    404,
+                    `No translation for the requested language available, retrieved: ${lilithLanguage}`,
+                );
             }
-            if (tag.type === "tag") {
-                tags.push({
-                    id: `${tag.id}`,
-                    name: tag.name,
-                });
-            }
-        });
 
-        const lilithLanguage: LilithLanguage =
-            LanguageMapper[getLanguageFromTags(book.tags)];
+            const { english, japanese, pretty } = book.title;
 
-        const matchesTranslation = requiredLanguages.includes(lilithLanguage);
-        useLilithLog(debug).log({
-            requiredLanguages,
-            lilithLanguage,
-            matchesTranslation,
-            tags: book.tags.map((tag) => [tag.type, tag.name]),
-        });
-
-        if (!matchesTranslation) {
-            throw new LilithError(
-                404,
-                `No translation for the requested language available, retrieved: ${lilithLanguage}`,
-            );
-        }
-
-        const { english, japanese, pretty } = book.title;
-
-        useLilithLog(debug).log({ coverUri: images });
-        return {
-            title: english || japanese || pretty,
-            id: `${book.id}`,
-            author,
-            tags,
-            cover: {
-                uri: images.cover,
-                width: book.images.cover.w,
-                height: book.images.cover.h,
-            },
-            // NHentai always provides 1 chapter books
-            chapters: [
-                {
-                    id: `${book.id}`,
-                    title:
-                        book.title[getLanguageFromTags(book.tags)] ||
-                        book.title.pretty,
-                    language: lilithLanguage,
-                    chapterNumber: 1,
-                    pages: images.images.map((image) => ({
-                        uri: image,
-                    })),
+            useLilithLog(debug).log({ coverUri: images });
+            return {
+                title: english || japanese || pretty,
+                id: `${book.id}`,
+                author,
+                tags,
+                cover: {
+                    uri: images.cover,
+                    width: book.images.cover.w,
+                    height: book.images.cover.h,
                 },
-            ],
-            availableLanguages: [lilithLanguage],
-        };
+                // NHentai always provides 1 chapter books
+                chapters: [
+                    {
+                        id: `${book.id}`,
+                        title:
+                            book.title[getLanguageFromTags(book.tags)] ||
+                            book.title.pretty,
+                        language: lilithLanguage,
+                        chapterNumber: 1,
+                        pages: images.images.map((image) => ({
+                            uri: image,
+                        })),
+                    },
+                ],
+                availableLanguages: [lilithLanguage],
+            };
+        } catch (error) {
+            console.error(error);
+            return {
+                title: "",
+                id: "",
+                author: "",
+                tags: [],
+                cover: { uri: "" },
+                chapters: [],
+                availableLanguages: [],
+            };
+        }
     };
 };

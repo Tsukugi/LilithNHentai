@@ -43,31 +43,43 @@ export const useNHentaiGetChapterMethod = (
      * @throws {LilithError} - Throws an error if the chapter is not found.
      */
     return async (chapterId: string): Promise<Chapter> => {
-        /**
-         * NHentai doesn't use chapters; it directly gets the pages from the book as 1 chapter books.
-         */
+        try {
+            /**
+             * NHentai doesn't use chapters; it directly gets the pages from the book as 1 chapter books.
+             */
 
-        const [book, imageUrls] = await Promise.all([
-            apiPromise(chapterId),
-            getImages(chapterId),
-        ]);
+            const [book, imageUrls] = await Promise.all([
+                apiPromise(chapterId),
+                getImages(chapterId),
+            ]);
 
-        useLilithLog(debug).log({
-            language: LanguageMapper[getLanguageFromTags(book.tags)],
-        });
-        useLilithLog(debug).log({ imageUrls });
+            useLilithLog(debug).log({
+                language: LanguageMapper[getLanguageFromTags(book.tags)],
+            });
+            useLilithLog(debug).log({ imageUrls });
 
-        return {
-            id: chapterId,
-            pages: book.images.pages.map((page, index) => ({
-                uri: imageUrls[index],
-                width: page.w,
-                height: page.h,
-            })),
-            language: LanguageMapper[getLanguageFromTags(book.tags)],
-            title:
-                book.title[getLanguageFromTags(book.tags)] || book.title.pretty,
-            chapterNumber: 1,
-        };
+            return {
+                id: chapterId,
+                pages: book.images.pages.map((page, index) => ({
+                    uri: imageUrls[index],
+                    width: page.w,
+                    height: page.h,
+                })),
+                language: LanguageMapper[getLanguageFromTags(book.tags)],
+                title:
+                    book.title[getLanguageFromTags(book.tags)] ||
+                    book.title.pretty,
+                chapterNumber: 1,
+            };
+        } catch (error) {
+            console.error(error);
+            return {
+                id: chapterId,
+                language: LanguageMapper.english,
+                title: "",
+                chapterNumber: 1,
+                pages: [],
+            };
+        }
     };
 };

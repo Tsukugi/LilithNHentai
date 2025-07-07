@@ -20,21 +20,26 @@ export const useNHentaiGetTrendingBooksMethod = (
 
     const { getGalleries } = useNHentaiMethods();
     return async (): Promise<BookBase[]> => {
-        const response = await request(`${baseUrl}`);
+        try {
+            const response = await request(`${baseUrl}`);
 
-        const document = await response.getDocument();
+            const document = await response.getDocument();
 
-        const popularGalleriesContainerSelector =
-            "div.container.index-container.index-popular";
+            const popularGalleriesContainerSelector =
+                "div.container.index-container.index-popular";
 
-        const galleries = getGalleries(
-            document,
-            requiredLanguages,
-            popularGalleriesContainerSelector,
-        );
+            const galleries = getGalleries(
+                document,
+                requiredLanguages,
+                popularGalleriesContainerSelector,
+            );
 
-        useLilithLog(debug).log({ galleries });
+            useLilithLog(debug).log({ galleries });
 
-        return galleries;
+            return galleries;
+        } catch (error) {
+            console.error(error);
+            return [];
+        }
     };
 };
