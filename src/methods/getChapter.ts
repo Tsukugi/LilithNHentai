@@ -2,6 +2,7 @@ import { GetChapter, Chapter } from "@atsu/lilith";
 import { NHentaiResult, UseNHentaiMethodProps } from "../interfaces";
 import { useLilithLog } from "../utils/log";
 import { useNHentaiMethods } from "./base";
+import { DateUtils } from "../utils/date";
 
 /**
  * Hook for interacting with NHentai chapters.
@@ -35,6 +36,8 @@ export const useNHentaiGetChapterMethod = (
 
         return images;
     };
+
+    const { getEpoch } = DateUtils;
 
     /**
      * Retrieves information about a chapter based on its identifier.
@@ -70,6 +73,7 @@ export const useNHentaiGetChapterMethod = (
                     book.title[getLanguageFromTags(book.tags)] ||
                     book.title.pretty,
                 chapterNumber: 1,
+                savedAt: getEpoch(),
             };
         } catch (error) {
             console.error(error);
@@ -79,6 +83,7 @@ export const useNHentaiGetChapterMethod = (
                 title: "",
                 chapterNumber: 1,
                 pages: [],
+                savedAt: getEpoch(),
             };
         }
     };

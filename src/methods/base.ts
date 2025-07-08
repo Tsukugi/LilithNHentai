@@ -9,6 +9,7 @@ import {
 import { UseDomParserImpl } from "../interfaces/domParser";
 import { NHentaiLanguage, NHentaiTag } from "../interfaces";
 import { ArrayUtils } from "../utils/array";
+import { DateUtils } from "../utils/date";
 
 /*
  *  This is the size that will define a Page in Search
@@ -167,6 +168,7 @@ const getGalleries = (
                 cover: cover,
                 title,
                 availableLanguages,
+                savedAt: DateUtils.getEpoch(),
             };
         });
 };

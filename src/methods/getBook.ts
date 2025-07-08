@@ -8,6 +8,7 @@ import {
 import { NHentaiResult, UseNHentaiMethodProps } from "../interfaces";
 import { useLilithLog } from "../utils/log";
 import { useNHentaiMethods } from "./base";
+import { DateUtils } from "../utils/date";
 
 /**
  * Hook for interacting with NHentai books.
@@ -49,6 +50,8 @@ export const useNHentaiGetBookmethod = (
             images,
         };
     };
+
+    const { getEpoch } = DateUtils;
 
     /**
      * Retrieves information about a book based on its identifier.
@@ -123,9 +126,11 @@ export const useNHentaiGetBookmethod = (
                         pages: images.images.map((image) => ({
                             uri: image,
                         })),
+                        savedAt: getEpoch(),
                     },
                 ],
                 availableLanguages: [lilithLanguage],
+                savedAt: getEpoch(),
             };
         } catch (error) {
             console.error(error);
@@ -137,6 +142,7 @@ export const useNHentaiGetBookmethod = (
                 cover: { uri: "" },
                 chapters: [],
                 availableLanguages: [],
+                savedAt: getEpoch(),
             };
         }
     };
