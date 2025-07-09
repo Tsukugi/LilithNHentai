@@ -1,5 +1,5 @@
-const getEpoch = (date?: Date): number => {
-    return Math.floor((date.getTime() || Date.now()) / 1000);
+const getEpoch = (date: number = Date.now()): number => {
+    return Math.floor(date / 1000);
 };
 
 export const DateUtils = {
