@@ -27,7 +27,7 @@
     "prepare": "npm run build"
   },
   "dependencies": {
-    "@atsu/lilith": "github:Tsukugi/Lilith"
+    "@atsu/lilith": "git+https://github.com/Tsukugi/Lilith.git"
   },
   "devDependencies": {
     "@jest/globals": "^29.7.0",
