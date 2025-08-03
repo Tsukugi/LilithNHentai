@@ -89,6 +89,7 @@ const removeDuplicateExtensions = (url: string): string => {
 
 const sanitizeImageSrc = (image: string | null): string | null => {
     if (!image) {
+        console.warn("Provided image is null");
         return null; // Return null if the input is null
     }
 
@@ -98,7 +99,7 @@ const sanitizeImageSrc = (image: string | null): string | null => {
     // Attempt to fix common issues
     if (!/^https?:\/\//i.test(image)) {
         // If the URL doesn't start with http:// or https://, add https://
-        image = "https://" + image;
+        image = `https://${image}`;
     }
 
     try {

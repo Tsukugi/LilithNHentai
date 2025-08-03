@@ -51,12 +51,10 @@ describe("Lilith", () => {
             expect(search4).toBeDefined();
         });
         test("GetLatestBooks", async () => {
-            if (!loader.getLatestBooks) return;
             const page: BookListResults = await loader.getLatestBooks(1);
             expect(page).toBeDefined();
         });
         test("GetTrendingBooks", async () => {
-            if (!loader.getTrendingBooks) return;
             const page: BookBase[] = await loader.getTrendingBooks();
             log(page.map((result) => result.title));
             expect(page).toBeDefined();
