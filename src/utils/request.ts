@@ -103,17 +103,8 @@ const sanitizeImageSrc = (image: string | null): string | null => {
     }
 
     try {
-        const url = new URL(image); // Validate the URL
-
-        // Check if the protocol is not HTTPS
-        if (url.protocol !== "https:") {
-            url.protocol = "https:"; // Change to HTTPS
-        }
-
-        // Remove duplicate extensions
-        url.pathname = removeDuplicateExtensions(url.pathname);
-
-        return url.toString(); // Return the sanitized URL
+        image = removeDuplicateExtensions(image);
+        return image; // Return the sanitized URL
     } catch (error) {
         console.error("Invalid URL:", image); // Log the error for debugging
         return null; // Return null if the URL is still invalid
