@@ -78,6 +78,26 @@ describe("Lilith", () => {
             expect(bookCoverExtension).toBe("webp");
         });
 
+        test("Doesn't have duplicate extensions", async () => {
+            const books: BookBase[] = await loader.getTrendingBooks();
+
+            // Function to check for duplicate extensions
+            const hasDuplicateExtensions = (url: string): boolean => {
+                const lastDotIndex = url.lastIndexOf(".");
+                if (lastDotIndex !== -1) {
+                    const extensions = url.slice(lastDotIndex).split(".");
+                    const uniqueExtensions = new Set(extensions);
+                    return uniqueExtensions.size < extensions.length; // If sizes differ, there are duplicates
+                }
+                return false; // No extensions found
+            };
+
+            // Assert that the book cover URL does not have duplicate extensions
+            books.forEach((book) =>
+                expect(hasDuplicateExtensions(book.cover.uri)).toBe(false),
+            );
+        });
+
         test("Has all extensions supported", async () => {
             const latestBooks: BookListResults = await loader.getLatestBooks(1);
 

@@ -9,6 +9,7 @@ import { NHentaiResult, UseNHentaiMethodProps } from "../interfaces";
 import { useLilithLog } from "../utils/log";
 import { useNHentaiMethods } from "./base";
 import { DateUtils } from "../utils/date";
+import { RequestUtils } from "../utils/request";
 
 /**
  * Hook for interacting with NHentai books.
@@ -37,13 +38,17 @@ export const useNHentaiGetBookmethod = (
 
         const coverSelector = "#cover img";
 
-        const cover = document.find(coverSelector).getAttribute("data-src");
+        const cover = RequestUtils.sanitizeImageSrc(
+            document.find(coverSelector).getAttribute("data-src"),
+        );
 
         const imagesSelector = ".thumb-container img.lazyload";
 
         const images = document
             .findAll(imagesSelector)
-            .map((image) => image.getAttribute("data-src"));
+            .map((image) =>
+                RequestUtils.sanitizeImageSrc(image.getAttribute("data-src")),
+            );
 
         return {
             cover,

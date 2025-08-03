@@ -3,6 +3,7 @@ import { NHentaiResult, UseNHentaiMethodProps } from "../interfaces";
 import { useLilithLog } from "../utils/log";
 import { useNHentaiMethods } from "./base";
 import { DateUtils } from "../utils/date";
+import { RequestUtils } from "../utils/request";
 
 /**
  * Hook for interacting with NHentai chapters.
@@ -32,7 +33,9 @@ export const useNHentaiGetChapterMethod = (
 
         const images = document
             .findAll(imagesSelector)
-            .map((image) => image.getAttribute("data-src"));
+            .map((image) =>
+                RequestUtils.sanitizeImageSrc(image.getAttribute("data-src")),
+            );
 
         return images;
     };

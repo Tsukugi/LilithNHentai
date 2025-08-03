@@ -10,6 +10,7 @@ import { UseDomParserImpl } from "../interfaces/domParser";
 import { NHentaiLanguage, NHentaiTag } from "../interfaces";
 import { ArrayUtils } from "../utils/array";
 import { DateUtils } from "../utils/date";
+import { RequestUtils } from "../utils/request";
 
 /*
  *  This is the size that will define a Page in Search
@@ -146,9 +147,9 @@ const getGalleries = (
 
             const { getAttribute } = resultCover;
             const cover: LilithImage = {
-                uri: getAttribute("data-src") || getAttribute("src") || "",
-                width: +getAttribute("width") || 0,
-                height: +getAttribute("height") || 0,
+                uri: RequestUtils.sanitizeImageSrc(
+                    getAttribute("data-src") || getAttribute("src") || null,
+                ),
             };
 
             const titleElement = anchorElement.find(".caption");
