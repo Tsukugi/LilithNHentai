@@ -87,24 +87,22 @@ const removeDuplicateExtensions = (url: string): string => {
         .join(".")}.${lastExtension}`;
 };
 
+const removeProtocol = (url: string): string => {
+    return url
+        .replace(/^[a-zA-Z][a-zA-Z\d+\-.]*:\/\//, "")
+        .replace(/^\/\//, "");
+};
+
 const sanitizeImageSrc = (image: string | null): string | null => {
     if (!image) {
         console.warn("Provided image is null");
         return null; // Return null if the input is null
     }
 
-    // Trim whitespace from the image URL
-    image = image.trim();
-
-    // Attempt to fix common issues
-    if (!/^https?:\/\//i.test(image)) {
-        // If the URL doesn't start with http:// or https://, add https://
-        image = `https://${image}`;
-    }
-
     try {
+        image = removeProtocol(image.trim());
         image = removeDuplicateExtensions(image);
-        return image; // Return the sanitized URL
+        return `https://${image}`;
     } catch (error) {
         console.error("Invalid URL:", image); // Log the error for debugging
         return null; // Return null if the URL is still invalid
@@ -115,4 +113,5 @@ export const RequestUtils = {
     useUrlWithParams,
     useParamIfExists,
     sanitizeImageSrc,
+    removeDuplicateExtensions,
 };

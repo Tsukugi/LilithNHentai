@@ -11,7 +11,6 @@ import { NHentaiLanguage, NHentaiTag } from "../interfaces";
 import { ArrayUtils } from "../utils/array";
 import { DateUtils } from "../utils/date";
 import { RequestUtils } from "../utils/request";
-import { useLilithLog } from "../utils/log";
 
 /*
  *  This is the size that will define a Page in Search
@@ -152,7 +151,6 @@ const getGalleries = (
             const cover: LilithImage = {
                 uri: RequestUtils.sanitizeImageSrc(src),
             };
-            useLilithLog(true).log([src, cover.uri]);
 
             const titleElement = anchorElement.find(".caption");
             const title: string = titleElement?.getText() || "";
