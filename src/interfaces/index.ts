@@ -1,4 +1,4 @@
-import { RepositoryBaseProps, Domains, ImageUriType } from "@atsu/lilith";
+import { RepositoryBaseProps, ImageUriType } from "@atsu/lilith";
 import { LilithRequest } from "./fetch";
 
 export enum NHentaiImageExtension {
@@ -52,6 +52,13 @@ export enum NHentaiLanguage {
     english = "english",
     japanese = "japanese",
     chinese = "chinese",
+}
+
+export interface Domains {
+    baseUrl: string;
+    imgBaseUrl: string;
+    apiUrl: string;
+    tinyImgBaseUrl: string;
 }
 
 export interface UseNHentaiMethodProps extends RepositoryBaseProps {
