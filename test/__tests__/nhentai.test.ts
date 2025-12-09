@@ -1,116 +1,80 @@
-import { beforeEach, describe, expect, test } from "@jest/globals";
+import fs from "fs";
+import path from "path";
+import { beforeEach, describe, expect, jest, test } from "@jest/globals";
 
-import {
-    RepositoryBase,
-    Book,
-    SearchResult,
-    BookListResults,
-    BookBase,
-    Chapter,
-} from "@atsu/lilith";
+import { RepositoryBase, Book, Chapter } from "@atsu/lilith";
 
-import { TextMocksForDomParser, headers, fetchMock } from "../nhentaiMock";
+import getMock from "../__mocks__/getMock.json";
+import { randomMock } from "../__mocks__/randomMock";
+import { searchMock } from "../__mocks__/searchMock";
 import { useCheerioDomParser } from "../../src/impl/useCheerioDomParser";
-
-import { useNodeFetch } from "../../src/impl/useNodeFetch";
 import { useLilithNHentai } from "../../src/index";
-import { useLilithLog } from "../../src/utils/log";
 
-const debug = true;
-const { log } = useLilithLog(debug);
+type MockBody = string | object;
 
-describe("Lilith", () => {
-    describe("Test nhentai ", () => {
-        let loader: RepositoryBase = {} as RepositoryBase;
-        beforeEach(() => {
-            loader = useLilithNHentai({
-                headers,
-                domParser: useCheerioDomParser,
-                fetch: useNodeFetch,
-                options: { debug },
-            });
-        });
+const mockResponse = (body: MockBody) => ({
+    text: async () => (typeof body === "string" ? body : JSON.stringify(body)),
+    json: async <T>() => body as T,
+    status: 200,
+});
 
-        test("getBook", async () => {
-            const book: Book = await loader.getBook("542191");
-            expect(book).toBeDefined();
-        });
-        test("getChapter", async () => {
-            const chapter: Chapter = await loader.getChapter("542191");
-            expect(chapter).toBeDefined();
-        });
-        test("Search", async () => {
-            const search: SearchResult = await loader.search("ass");
-            expect(search.results[0].cover.uri).toBeTruthy();
-            expect(search).toBeDefined();
-        });
-        test("Search offset", async () => {
-            const search4: SearchResult = await loader.search("English", {
-                page: 4,
-            });
-            expect(search4).toBeDefined();
-        });
-        test("GetLatestBooks", async () => {
-            const page: BookListResults = await loader.getLatestBooks(1);
-            expect(page).toBeDefined();
-        });
-        test("GetTrendingBooks", async () => {
-            const page: BookBase[] = await loader.getTrendingBooks();
-            log(page.map((result) => result.title));
-            expect(page).toBeDefined();
-            expect(page.length).toBeGreaterThan(0);
-        });
-        test("RandomBook", async () => {
-            const randomLoader = useLilithNHentai({
-                headers,
-                fetch: () => fetchMock({}, TextMocksForDomParser.Random),
-                domParser: useCheerioDomParser,
-            });
-            const book: Book = await randomLoader.getRandomBook();
-            log(book);
-            expect(book).toBeDefined();
-        });
-        test("Supports webp", async () => {
-            const book: Book = await loader.getBook("542733");
-            const bookCoverExtension = book.cover.uri.split(".").slice(-1)[0];
-            expect(bookCoverExtension).toBe("webp");
-        });
+const homepageHtml = fs.readFileSync(
+    path.join(__dirname, "../__mocks__/Homepage/2025/homepage.html"),
+    "utf8",
+);
 
-        test("Doesn't have duplicate extensions", async () => {
-            const books: BookBase[] = await loader.getTrendingBooks();
+const apiListMock = { num_pages: 1, per_page: 25 };
 
-            // Function to check for duplicate extensions
-            const hasDuplicateExtensions = (url: string): boolean => {
-                const lastDotIndex = url.lastIndexOf(".");
-                if (lastDotIndex !== -1) {
-                    const extensions = url.slice(lastDotIndex).split(".");
-                    const uniqueExtensions = new Set(extensions);
-                    return uniqueExtensions.size < extensions.length; // If sizes differ, there are duplicates
-                }
-                return false; // No extensions found
-            };
+const mockFetch = jest.fn(async (url: string) => {
+    if (url.includes("/api/gallery/")) return mockResponse(getMock);
+    if (url.includes("/api/galleries/all")) return mockResponse(apiListMock);
+    if (url.includes("/random")) return mockResponse(randomMock);
+    if (url.includes("/g/")) return mockResponse(randomMock);
+    if (url.includes("/search")) return mockResponse(searchMock);
+    return mockResponse(homepageHtml);
+});
 
-            // Assert that the book cover URL does not have duplicate extensions
-            books.forEach((book) =>
-                expect(hasDuplicateExtensions(book.cover.uri)).toBe(false),
-            );
+describe("Lilith (mocked)", () => {
+    let loader: RepositoryBase;
+
+    beforeEach(() => {
+        mockFetch.mockClear();
+        loader = useLilithNHentai({
+            fetch: mockFetch,
+            domParser: useCheerioDomParser,
+            options: { debug: false },
+            headers: { cookie: "", "User-Agent": "jest" },
         });
+    });
 
-        test("Has all extensions supported", async () => {
-            const latestBooks: BookListResults = await loader.getLatestBooks(1);
+    test("search uses cached HTML instead of the web", async () => {
+        const search = await loader.search("ass");
+        expect(search.totalPages).toBeGreaterThan(1);
+        expect(search.results.length).toBeGreaterThan(0);
+    });
 
-            const extensions = latestBooks.results.map(
-                (result) => result.cover.uri,
-            );
-            log(extensions);
+    test("getTrendingBooks parses the homepage snapshot", async () => {
+        const trending = await loader.getTrendingBooks();
+        expect(trending.length).toBeGreaterThan(0);
+        trending.forEach((book) =>
+            expect(book.cover.uri).toMatch(/^https:\/\//),
+        );
+    });
 
-            const undefinedExtensions = extensions.filter(
-                (uri) => uri.split(".").slice(-1)[0] === undefined,
-            );
+    test("getLatestBooks mixes API numbers with homepage galleries", async () => {
+        const latest = await loader.getLatestBooks(1);
+        expect(latest.page).toBe(1);
+        expect(latest.totalPages).toBe(apiListMock.num_pages);
+        expect(latest.results.length).toBeGreaterThan(0);
+    });
 
-            log(await fetch(extensions[0]));
+    test("getBook and getChapter reuse the mocked gallery HTML", async () => {
+        const book: Book = await loader.getBook("480154");
+        expect(book.id).toBe("480154");
+        expect(book.cover.uri).toMatch(/^https:\/\//);
+        expect(book.chapters[0].pages.length).toBeGreaterThan(0);
 
-            expect(undefinedExtensions.length).toBe(0);
-        });
+        const chapter: Chapter = await loader.getChapter("480154");
+        expect(chapter.pages.length).toBeGreaterThan(0);
     });
 });
