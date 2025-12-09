@@ -4,6 +4,7 @@ import {
     RepositoryBaseProps,
     CustomFetchInitOptions,
     LilithError,
+    LilithImage,
 } from "@atsu/lilith";
 import { Result } from "../interfaces/fetch";
 import { useLilithLog } from "./log";
@@ -66,25 +67,18 @@ export const useRequest = ({
 };
 
 const removeDuplicateExtensions = (url: string): string => {
-    const lastDotIndex = url.lastIndexOf(".");
-    if (lastDotIndex === -1) throw new Error("No extensions at all");
-
-    const paths = url.split(".");
+    const segments = url.split(".");
     const validExtensions = Object.values(NHentaiImageExtension);
 
-    const checkIsValidExtension = (ext: string) =>
-        !!validExtensions.find((valExt) => ext === valExt);
+    const firstValidIndex = segments.findIndex((segment) =>
+        validExtensions.includes(segment as NHentaiImageExtension),
+    );
 
-    // Find the last valid extension
-    const lastExtension = paths[paths.length - 1];
-
-    // If a valid extension was found, reconstruct the URL
-    if (!checkIsValidExtension(lastExtension))
+    if (firstValidIndex === -1) {
         throw new Error("No valid extension");
+    }
 
-    return `${paths
-        .filter((path) => !checkIsValidExtension(path))
-        .join(".")}.${lastExtension}`;
+    return segments.slice(0, firstValidIndex + 1).join(".");
 };
 
 const removeProtocol = (url: string): string => {
@@ -100,18 +94,42 @@ const sanitizeImageSrc = (image: string | null): string | null => {
     }
 
     try {
-        image = removeProtocol(image.trim());
-        image = removeDuplicateExtensions(image);
-        return `https://${image}`;
+        const trimmedImage = removeProtocol(image.trim());
+        const normalizedImage = removeDuplicateExtensions(trimmedImage);
+        return `https://${normalizedImage}`;
     } catch (error) {
         console.error("Invalid URL:", image); // Log the error for debugging
         return null; // Return null if the URL is still invalid
     }
 };
 
+export type SanitizedImage = { uri: string | null; fallbackUri?: string };
+
+const sanitizeImageSrcWithFallback = (
+    ...images: Array<string | null | undefined>
+): SanitizedImage => {
+    const sanitizedCandidates = images
+        .map((candidate) => sanitizeImageSrc(candidate || null))
+        .filter((candidate): candidate is string => !!candidate);
+
+    const [uri] = sanitizedCandidates;
+    const fallbackUri = sanitizedCandidates.find(
+        (candidate) => candidate !== uri,
+    );
+
+    return { uri: uri || null, fallbackUri: fallbackUri || undefined };
+};
+
+const toLilithImage = (image: SanitizedImage): LilithImage => ({
+    uri: image.uri ?? "",
+    ...(image.fallbackUri ? { fallbackUri: image.fallbackUri } : {}),
+});
+
 export const RequestUtils = {
     useUrlWithParams,
     useParamIfExists,
     sanitizeImageSrc,
+    sanitizeImageSrcWithFallback,
     removeDuplicateExtensions,
+    toLilithImage,
 };

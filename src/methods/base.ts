@@ -146,11 +146,14 @@ const getGalleries = (
             const resultCover = anchorElement.find("img");
 
             const { getAttribute } = resultCover;
-            const src = getAttribute("data-src") || getAttribute("src") || null;
+            const coverCandidate = RequestUtils.sanitizeImageSrcWithFallback(
+                getAttribute("data-src"),
+                getAttribute("src"),
+            );
 
-            const cover: LilithImage = {
-                uri: RequestUtils.sanitizeImageSrc(src),
-            };
+            const cover: LilithImage = RequestUtils.toLilithImage(
+                coverCandidate,
+            );
 
             const titleElement = anchorElement.find(".caption");
             const title: string = titleElement?.getText() || "";

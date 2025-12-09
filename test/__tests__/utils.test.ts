@@ -8,29 +8,35 @@ const { log } = useLilithLog(debug);
 
 describe("Lilith", () => {
     describe("Test Utils ", () => {
-        const res = "https://a.com/b/c.png";
         test("sanitizeImageSrc", () => {
             const { sanitizeImageSrc } = RequestUtils;
-            expect(sanitizeImageSrc("//a.com/b/c.png")).toBe(res);
-            expect(sanitizeImageSrc("//a.com/b/c.jpg.png")).toBe(res);
-            expect(sanitizeImageSrc("//a.com/b/c.jpg.png.jpg.png")).toBe(res);
-            expect(sanitizeImageSrc("a.com/b/c.png")).toBe(res);
-            expect(sanitizeImageSrc("http://a.com/b/c.png")).toBe(res);
-            expect(sanitizeImageSrc("https://a.com/b/c.png")).toBe(res);
-            log(res);
+            const expectedPng = "https://a.com/b/c.png";
+            const expectedJpg = "https://a.com/b/c.jpg";
+
+            expect(sanitizeImageSrc("//a.com/b/c.png")).toBe(expectedPng);
+            expect(sanitizeImageSrc("//a.com/b/c.jpg.png")).toBe(expectedJpg);
+            expect(sanitizeImageSrc("//a.com/b/c.jpg.png.jpg.png")).toBe(
+                expectedJpg,
+            );
+            expect(sanitizeImageSrc("a.com/b/c.png")).toBe(expectedPng);
+            expect(sanitizeImageSrc("http://a.com/b/c.png")).toBe(expectedPng);
+            expect(sanitizeImageSrc("https://a.com/b/c.png")).toBe(expectedPng);
+            log(expectedPng);
         });
         test("removeDuplicateExtensions", () => {
             const { removeDuplicateExtensions } = RequestUtils;
+            const expectedPng = "https://a.com/b/c.png";
+            const expectedJpg = "https://a.com/b/c.jpg";
             expect(removeDuplicateExtensions("https://a.com/b/c.png")).toBe(
-                res,
+                expectedPng,
             );
             expect(removeDuplicateExtensions("https://a.com/b/c.jpg.png")).toBe(
-                res,
+                expectedJpg,
             );
             expect(
                 removeDuplicateExtensions("https://a.com/b/c.jpg.png.jpg.png"),
-            ).toBe(res);
-            log(res);
+            ).toBe(expectedJpg);
+            log(expectedPng);
         });
     });
 });

@@ -31,11 +31,12 @@ export const useNHentaiGetChapterMethod = (
 
         const imagesSelector = ".thumb-container img.lazyload";
 
-        const images = document
-            .findAll(imagesSelector)
-            .map((image) =>
-                RequestUtils.sanitizeImageSrc(image.getAttribute("data-src")),
-            );
+        const images = document.findAll(imagesSelector).map((image) =>
+            RequestUtils.sanitizeImageSrcWithFallback(
+                image.getAttribute("data-src"),
+                image.getAttribute("src"),
+            ),
+        );
 
         return images;
     };
@@ -67,7 +68,9 @@ export const useNHentaiGetChapterMethod = (
             return {
                 id: chapterId,
                 pages: book.images.pages.map((page, index) => ({
-                    uri: imageUrls[index],
+                    ...RequestUtils.toLilithImage(
+                        imageUrls[index] || { uri: null },
+                    ),
                     width: page.w,
                     height: page.h,
                 })),

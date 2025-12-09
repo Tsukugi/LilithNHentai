@@ -38,20 +38,22 @@ export const useNHentaiGetBookmethod = (
 
         const coverSelector = "#cover img";
 
-        const cover = RequestUtils.sanitizeImageSrc(
+        const coverCandidate = RequestUtils.sanitizeImageSrcWithFallback(
             document.find(coverSelector).getAttribute("data-src"),
+            document.find(coverSelector).getAttribute("src"),
         );
 
         const imagesSelector = ".thumb-container img.lazyload";
 
-        const images = document
-            .findAll(imagesSelector)
-            .map((image) =>
-                RequestUtils.sanitizeImageSrc(image.getAttribute("data-src")),
-            );
+        const images = document.findAll(imagesSelector).map((image) =>
+            RequestUtils.sanitizeImageSrcWithFallback(
+                image.getAttribute("data-src"),
+                image.getAttribute("src"),
+            ),
+        );
 
         return {
-            cover,
+            cover: coverCandidate,
             images,
         };
     };
@@ -115,7 +117,7 @@ export const useNHentaiGetBookmethod = (
                 author,
                 tags,
                 cover: {
-                    uri: images.cover,
+                    ...RequestUtils.toLilithImage(images.cover),
                     width: book.images.cover.w,
                     height: book.images.cover.h,
                 },
@@ -128,9 +130,9 @@ export const useNHentaiGetBookmethod = (
                             book.title.pretty,
                         language: lilithLanguage,
                         chapterNumber: 1,
-                        pages: images.images.map((image) => ({
-                            uri: image,
-                        })),
+                        pages: images.images.map((image) =>
+                            RequestUtils.toLilithImage(image || { uri: null }),
+                        ),
                         savedAt: getEpoch(),
                     },
                 ],
